@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>您有社區營養講座合作需求嗎？</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .form-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        h2 {
+            text-align: center;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h2>報名資訊填寫</h2>
+        
+        <!-- form action 綁定 FormSubmit 服務與您的信箱 -->
+        <form action="https://formsubmit.co/roy111111nter@gmail.com" method="POST">
+            
+            <!-- 關閉機器人驗證碼 (可選) -->
+            <input type="hidden" name="_captcha" value="false">
+            
+            <div class="form-group">
+                <label for="name">您的稱呼：</label>
+                <input type="text" id="name" name="稱呼" required placeholder="請輸入姓名或稱呼">
+            </div>
+            
+            <div class="form-group">
+                <label for="unit">業務單位：</label>
+                <input type="text" id="unit" name="業務單位" required placeholder="請輸入公司或單位名稱">
+            </div>
+            
+            <div class="form-group">
+                <label for="contact">聯絡方式 (手機、LINE、Email等)：</label>
+                <input type="text" id="contact" name="聯絡方式" required placeholder="請留下方便聯繫的方式">
+            </div>
+            
+            <div class="form-group">
+                <label for="time">方便聯絡時間：</label>
+                <select id="time" name="方便聯絡時間" required>
+                    <option value="" disabled selected>請選擇時段</option>
+                    <option value="10:00-12:00">10:00 - 12:00</option>
+                    <option value="12:00-14:00">12:00 - 14:00</option>
+                    <option value="14:00-16:00">14:00 - 16:00</option>
+                    <option value="16:00-18:00">16:00 - 18:00</option>
+                    <option value="18:00-20:00">18:00 - 20:00</option>
+                </select>
+            </div>
+            
+            <button type="submit">送出資料</button>
+        </form>
+    </div>
+
+</body>
+</html>
