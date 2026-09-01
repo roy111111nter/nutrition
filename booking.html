@@ -1,1 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>預約排程表 - Google日曆API實戰版</title>
+    <style>
+        /* 基礎設定 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #ffffff; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
+        .booking-container { display: flex; gap: 40px; max-width: 1450px; width: 100%; }
 
+        /* 左側日曆 */
+        .calendar-panel { width: 160px; flex-shrink: 0; }
+        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 15px; }
+        .nav-arrows { font-weight: bold; cursor: pointer; color: #5f6368; user-select: none; }
+        .nav-arrows span { padding: 0 8px; }
+        .nav-arrows span:hover { color: #202124; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 4px 0; font-size: 0.75em; }
+        .day-name { font-size: 0.85em; margin-bottom: 5px; color: #70757a; }
+        .date-cell { width: 22px; height: 22px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;}
+        
+        /* 狀態顏色定義 */
+        .date-cell.state-2 { background-color: #c2e7ff; } 
+        .date-cell.state-2:hover { background-color: #a8dcf8; }
+        .date-cell.state-1 { background-color: #e8f0fe; } 
+        .date-cell.state-1:hover { background-color: #d2e3fc; }
+        .date-cell.state-3 { background-color: transparent; } 
+        .date-cell.state-3:not(.red-day) { color: #bdc1c6; cursor: default; } 
+        .red-day { color: #FF7C80 !important; }
+
+        /* 右側時段列表 */
+        .slots-panel { flex: 1; display: flex; flex-direction: column; position: relative;}
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #0b57d0; font-weight: bold; font-size: 0.85em;}
+        .week-controls button:hover { background: #f8f9fa; }
+        
+        .toggle-container { display: flex; align-items: center; gap: 8px; font-size: 0.9em; color: #5f6368; cursor: pointer; background: #f1f3f4; padding: 6px 12px; border-radius: 8px;}
+        .toggle-container input { cursor: pointer; }
+        .slots-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 40px;}
+        .day-column { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .col-header { text-align: center; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; }
+        .col-header .dow { font-size: 0.85em; margin-bottom: 5px; color: #3c4043;}
+        .col-header .date { font-size: 1.5em; }
+        .footer-note { text-align: right; color: #5f6368; font-size: 0.8em; line-height: 1.6; margin-top: auto; padding-top: 20px; }
+
+        /* 按鈕設計 */
+        .time-btn { width: 100%; padding: 8px 4px; border: 1px solid #747775; border-radius: 24px; background: none; color: #0b57d0; font-size: 0.75rem; cursor: pointer; transition: background 0.2s; text-align: center; text-decoration: none; display: block; box-sizing: border-box; white-space: nowrap; }
+        .time-btn:hover:not(.disabled) { background-color: #f8f9fa; }
+        .time-btn.disabled { border: 1px solid #e8eaed; color: #a8c7fa; cursor: default; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div class="booking-container">
+    <div class="calendar-panel">
+        <div class="month-header">
+            <span id="calendar-title">2026年</span>
+            <div class="nav-arrows">
+                <span onclick="changeCalendarMonth(-1)">&lt;</span>
+                <span onclick="changeCalendarMonth(1)">&gt;</span>
+            </div>
+        </div>
+        <div class="days-grid" id="calendar-grid"></div>
+    </div>
+
+    <div class="slots-panel">
+        <div class="panel-header">
+            <div class="week-controls">
+                <button onclick="changeWeek(-1)"> &lt; 上一週 </button>
+                <button onclick="changeWeek(1)"> 下一週 &gt; </button>
+            </div>
+            <label class="toggle-container">
+                <input type="checkbox" id="holidayToggle" checked onchange="renderAll()"> 
+                <span>後台模擬：開放例假日預約</span>
+            </label>
+        </div>
+        
+        <div class="slots-grid" id="schedule-grid"></div>
+
+        <div class="footer-note">
+            暫未開放三天內及三個月後的線上預約<br>
+            (GMT+08:00) 台北標準時間
+        </div>
+    </div>
+</div>
+
+<script>
+    // === API 核心設定 ===
+    const API_KEY = "AIzaSyC7S2Qc_VbcK_9ZpfHeMP1NTsbJgSMe5z4";
+    const CALENDAR_ID = "1eec1db5ec1525875654b21a8c652d2d303924e199b4b90ad35ee20f06aa57d8@group.calendar.google.com";
+
+    const timeSlots = ["08:00-10:00", "10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
+    const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+    const specialHolidays = ["2026-09-17", "2026-10-10"]; 
+
+    let busyEvents = []; // 存放從 Google 抓回來的真實忙碌行程
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const minDate = new Date(today); 
+    minDate.setDate(today.getDate() + 3); 
+
+    const maxDate = new Date(today);
+    maxDate.setMonth(today.getMonth() + 3); 
+
+    let currentDisplayDate = new Date(today); 
+    let currentCalendarDate = new Date(today); 
+
+    // === 抓取 Google 日曆資料 ===
+    async function loadGoogleCalendarData() {
+        // 設定要抓取的時間區間 (從今天到 3 個月後)，轉成 Google 看得懂的格式
+        const timeMin = today.toISOString(); 
+        const timeMax = maxDate.toISOString();
+        
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.items) {
+                // 將 Google 的資料過濾轉譯成我們好運算的格式
+                busyEvents = data.items.map(event => {
+                    if (event.start.date) {
+                        return { isFullDay: true, dateStr: event.start.date }; // 全天行程
+                    } else {
+                        return { 
+                            isFullDay: false, 
+                            start: new Date(event.start.dateTime).getTime(), 
+                            end: new Date(event.end.dateTime).getTime() 
+                        }; // 特定時段行程
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("讀取 Google 日曆失敗：", error);
+        }
+        
+        // 資料抓完後，重新渲染一次畫面，將「可預約」改成真實狀態
+        renderAll(); 
+    }
+
+    // 格式化日期為 YYYY-MM-DD
+    function formatDateString(d) {
+        let y = d.getFullYear();
+        let m = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    // === 判斷該時段是否已被預約 (與 Google 資料比對) ===
+    function isSlotBooked(dateStr, slotStr) {
+        // 1. 先檢查有沒有設定「全天忙碌」
+        for (let evt of busyEvents) {
+            if (evt.isFullDay && evt.dateStr === dateStr) return true;
+        }
+
+        // 2. 將時段 (例如 08:00-10:00) 轉換成時間戳記
+        const [startHourStr, endHourStr] = slotStr.split('-');
+        const slotStart = new Date(`${dateStr}T${startHourStr}:00`).getTime();
+        const slotEnd = new Date(`${dateStr}T${endHourStr}:00`).getTime();
+
+        // 3. 檢查是否有任何 Google 行程與這個時段「重疊」
+        for (let evt of busyEvents) {
+            if (!evt.isFullDay) {
+                // 重疊邏輯：行程開始時間早於時段結束，且行程結束時間晚於時段開始
+                if (evt.start < slotEnd && evt.end > slotStart) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function checkIsHoliday(dateObj) {
+        let dayOfWeek = dateObj.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) return true;
+        return specialHolidays.includes(formatDateString(dateObj)); 
+    }
+
+    function getDayState(dateObj) {
+        let isHol = checkIsHoliday(dateObj);
+        let allowHolidayBooking = document.getElementById('holidayToggle').checked;
+
+        if (isHol && !allowHolidayBooking) return 3;
+
+        if (dateObj < today || dateObj > maxDate) {
+            return 3; 
+        } else if (dateObj >= today && dateObj < minDate) {
+            return 1; 
+        } else {
+            return 2; 
+        }
+    }
+
+    function getBookedCount(dateStr) {
+        let count = 0;
+        timeSlots.forEach(slot => {
+            if (isSlotBooked(dateStr, slot)) count++;
+        });
+        return count;
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        
+        document.getElementById('calendar-title').innerText = `${year}年${month + 1}月`;
+        
+        let calendarHTML = `<div class="day-name">一</div><div class="day-name">二</div><div class="day-name">三</div><div class="day-name">四</div><div class="day-name">五</div><div class="day-name red-day">六</div><div class="day-name red-day">日</div>`;
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        let firstDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+        for(let i = 0; i < firstDayOfWeek; i++) { calendarHTML += `<div></div>`; }
+
+        for(let d = 1; d <= lastDay.getDate(); d++) {
+            let loopDate = new Date(year, month, d);
+            loopDate.setHours(0, 0, 0, 0);
+
+            let dateStr = formatDateString(loopDate);
+            let state = getDayState(loopDate);
+            let isHol = checkIsHoliday(loopDate);
+            let bookedCount = getBookedCount(dateStr);
+            let textClass = isHol ? "red-day" : "";
+            
+            let bgClass = "";
+            if (state === 3) {
+                bgClass = "state-3";
+            } else if (state === 1 || (state === 2 && bookedCount === timeSlots.length)) {
+                bgClass = "state-1"; 
+            } else {
+                bgClass = "state-2"; 
+            }
+            
+            let clickEvent = `onclick="jumpToDate(${year}, ${month}, ${d})"`;
+            calendarHTML += `<div class="date-cell ${bgClass} ${textClass}" ${clickEvent}>${d}</div>`;
+        }
+        grid.innerHTML = calendarHTML;
+    }
+
+    function jumpToDate(year, month, day) {
+        currentDisplayDate = new Date(year, month, day);
+        currentDisplayDate.setHours(0, 0, 0, 0);
+        renderSchedule(); 
+    }
+
+    function changeCalendarMonth(offset) {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+        renderCalendar();
+    }
+
+    function renderSchedule() {
+        const grid = document.getElementById('schedule-grid');
+        grid.innerHTML = ""; 
+
+        let currentDayOfWeek = currentDisplayDate.getDay();
+        let distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
+        
+        let startOfWeek = new Date(currentDisplayDate);
+        startOfWeek.setDate(currentDisplayDate.getDate() + distanceToMonday);
+
+        for (let i = 0; i < 7; i++) {
+            let loopDate = new Date(startOfWeek);
+            loopDate.setDate(startOfWeek.getDate() + i);
+            loopDate.setHours(0, 0, 0, 0);
+
+            let dateStr = formatDateString(loopDate);
+            let state = getDayState(loopDate);
+            let isHol = checkIsHoliday(loopDate);
+            let redClass = isHol ? " red-day" : "";
+
+            let dayColumnHTML = `<div class="day-column"><div class="col-header"><span class="dow${redClass}">${dayNames[loopDate.getDay()]}</span><span class="date${redClass}">${loopDate.getDate()}</span></div>`;
+
+            timeSlots.forEach(slot => {
+                let isBooked = isSlotBooked(dateStr, slot);
+                let btnText = "";
+                let btnClass = "time-btn";
+                
+                // === 帶入預約參數到聯繫網頁 (此處的 contact.html 請替換成你的實際聯繫網頁網址) ===
+                let link = `href="contact.html?date=${dateStr}&time=${slot}"`; 
+
+                if (state === 3) {
+                    btnText = slot + " 不開放";
+                    btnClass += " disabled";
+                    link = "";
+                } else if (state === 1) {
+                    btnText = slot + (isBooked ? " 已預約" : " 不開放");
+                    btnClass += " disabled";
+                    link = "";
+                } else if (state === 2) {
+                    if (isBooked) {
+                        btnText = slot + " 已預約";
+                        btnClass += " disabled";
+                        link = "";
+                    } else {
+                        btnText = slot + " 可預約";
+                    }
+                }
+                
+                dayColumnHTML += `<a ${link} class="${btnClass}">${btnText}</a>`;
+            });
+
+            dayColumnHTML += `</div>`;
+            grid.innerHTML += dayColumnHTML;
+        }
+        currentCalendarDate = new Date(currentDisplayDate);
+        renderCalendar();
+    }
+
+    function changeWeek(offset) {
+        currentDisplayDate.setDate(currentDisplayDate.getDate() + (offset * 7));
+        renderSchedule();
+    }
+
+    function renderAll() {
+        renderCalendar();
+        renderSchedule();
+    }
+
+    // 網頁剛打開時，先畫出空表，然後啟動非同步抓取 Google 日曆，抓完自動重繪
+    renderAll();
+    loadGoogleCalendarData();
+</script>
+
+</body>
+</html>
