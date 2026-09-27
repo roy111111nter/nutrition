@@ -3,48 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約排程表 - 雙API實戰版 (日曆+試算表後台)</title>
+    <title>預約排程表 - 網格膠囊專業版 (動畫+維護開關+寬距月曆)</title>
     <style>
         /* 基礎設定 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #ffffff; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
         .booking-container { display: flex; gap: 40px; max-width: 1450px; width: 100%; }
 
-        /* 左側日曆 */
-        .calendar-panel { width: 160px; flex-shrink: 0; }
-        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 15px; }
+        /* 左側日曆 - 面積放大 150%，字體維持原樣 */
+        .calendar-panel { width: 220px; flex-shrink: 0; } /* 寬度從 160px 加寬至 220px */
+        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 20px; }
         .nav-arrows { font-weight: bold; cursor: pointer; color: #5f6368; user-select: none; }
-        .nav-arrows span { padding: 0 8px; }
+        .nav-arrows span { padding: 0 10px; }
         .nav-arrows span:hover { color: #202124; }
-        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 4px 0; font-size: 0.75em; }
-        .day-name { font-size: 0.85em; margin-bottom: 5px; color: #70757a; }
-        .date-cell { width: 22px; height: 22px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;}
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 8px 0; font-size: 0.75em; } /* 間距加寬，字體不變 */
+        .day-name { font-size: 0.85em; margin-bottom: 8px; color: #70757a; }
+        .date-cell { width: 28px; height: 28px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;} /* 圈圈從 22px 放大至 28px */
         
-        /* 狀態顏色定義 */
-        .date-cell.state-2 { background-color: #c2e7ff; } 
-        .date-cell.state-2:hover { background-color: #a8dcf8; }
-        .date-cell.state-1 { background-color: #e8f0fe; } 
-        .date-cell.state-1:hover { background-color: #d2e3fc; }
+        /* 日曆狀態色彩 */
+        .date-cell.state-2 { background-color: #9bc1e6; color: white;} 
+        .date-cell.state-2:hover { background-color: #82afd9; }
+        .date-cell.state-1 { background-color: #e6f2fa; } 
+        .date-cell.state-1:hover { background-color: #d1e6f5; }
         .date-cell.state-3 { background-color: transparent; } 
         .date-cell.state-3:not(.red-day) { color: #bdc1c6; cursor: default; } 
         .red-day { color: #FF7C80 !important; }
 
-        /* 右側時段列表 */
-        .slots-panel { flex: 1; display: flex; flex-direction: column; position: relative;}
+        /* 右側時段面板 */
+        .slots-panel { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; /* 確保動畫不超過邊界 */ }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #0b57d0; font-weight: bold; font-size: 0.85em;}
+        .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #2c4a6b; font-weight: bold; font-size: 0.85em; transition: background 0.2s, transform 0.1s;}
         .week-controls button:hover { background: #f8f9fa; }
+        .week-controls button:active { transform: scale(0.95); /* 點擊按鈕縮小回饋 */ }
         
-        .slots-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 40px;}
-        .day-column { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .col-header { text-align: center; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; }
-        .col-header .dow { font-size: 0.85em; margin-bottom: 5px; color: #3c4043;}
+        /* 🚀 網格排版 */
+        .slots-grid { 
+            display: grid; 
+            grid-template-columns: 85px repeat(7, 1fr); 
+            gap: 16px 8px; 
+            align-items: center;
+            margin-bottom: 40px;
+            /* 動畫基礎設定 */
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        
+        /* 動畫類別 (搭配 JavaScript 使用) */
+        .slots-grid.fade-out-left { opacity: 0; transform: translateX(-20px); }
+        .slots-grid.fade-out-right { opacity: 0; transform: translateX(20px); }
+        .slots-grid.fade-in { opacity: 1; transform: translateX(0); }
+
+        /* 表頭日期設計 */
+        .col-header { text-align: center; display: flex; flex-direction: column; align-items: center; padding-bottom: 10px;}
+        .col-header .dow { font-size: 0.85em; margin-bottom: 5px; color: #5f6368;}
         .col-header .date { font-size: 1.5em; }
-        .footer-note { text-align: right; color: #5f6368; font-size: 0.8em; line-height: 1.6; margin-top: auto; padding-top: 20px; }
+
+        /* 左側時間標籤 (深色粗體) */
+        .time-label {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #1e3a5f; 
+            text-align: right;
+            padding-right: 12px;
+            white-space: nowrap;
+        }
 
         /* 按鈕設計 */
-        .time-btn { width: 100%; padding: 8px 4px; border: 1px solid #747775; border-radius: 24px; background: none; color: #0b57d0; font-size: 0.75rem; cursor: pointer; transition: background 0.2s; text-align: center; text-decoration: none; display: block; box-sizing: border-box; white-space: nowrap; }
-        .time-btn:hover:not(.disabled) { background-color: #f8f9fa; }
-        .time-btn.disabled { border: 1px solid #e8eaed; color: #a8c7fa; cursor: default; pointer-events: none; }
+        .btn-wrapper { display: flex; justify-content: center; width: 100%; }
+        .time-btn { 
+            width: 100%; 
+            max-width: 90px; 
+            padding: 10px 0; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            cursor: pointer; 
+            transition: opacity 0.2s, transform 0.1s; 
+            text-align: center; 
+            text-decoration: none; 
+            display: block; 
+            box-sizing: border-box; 
+            border: none;
+        }
+        /* 點擊按鈕縮小回饋 */
+        .time-btn:active:not(.disabled):not(.booked) { transform: scale(0.95); }
+        
+        /* 狀態配色獨立區隔 */
+        /* 狀態：可預約 (實心藍) */
+        .time-btn.available { background-color: #9bc1e6; color: #1e3a5f; }
+        .time-btn.available:hover { opacity: 0.8; }
+        
+        /* 狀態：已預約 (淡冰藍底，深色字) */
+        .time-btn.booked { background-color: #e2f1f8; color: #1e3a5f; cursor: default; pointer-events: none; }
+
+        /* 狀態：未開放 (極白藍底，淺色字) */
+        .time-btn.disabled { background-color: #f4f9fc; color: #b3cde0; cursor: default; pointer-events: none; }
+
+        .footer-note { text-align: right; color: #5f6368; font-size: 0.8em; line-height: 1.6; margin-top: auto; padding-top: 20px; }
     </style>
 </head>
 <body>
@@ -67,11 +119,14 @@
                 <button onclick="changeWeek(-1)"> &lt; 上一週 </button>
                 <button onclick="changeWeek(1)"> 下一週 &gt; </button>
             </div>
+            <!-- 維護狀態提示，預設隱藏 -->
+            <div id="maintenance-warning" style="display: none; color: #d93025; font-weight: bold; font-size: 0.9em;">⚠️ 系統維護中，暫停預約</div>
         </div>
         
-        <div class="slots-grid" id="schedule-grid"></div>
+        <!-- 加入初始動畫類別 fade-in -->
+        <div class="slots-grid fade-in" id="schedule-grid"></div>
 
-        <div class="footer-note">
+        <div class="footer-note" id="footer-note-text">
             暫未開放三天內及三個月後的線上預約<br>
             (GMT+08:00) 台北標準時間
         </div>
@@ -82,8 +137,6 @@
     // === API 核心設定 ===
     const API_KEY = "AIzaSyC7S2Qc_VbcK_9ZpfHeMP1NTsbJgSMe5z4";
     const CALENDAR_ID = "1eec1db5ec1525875654b21a8c652d2d303924e199b4b90ad35ee20f06aa57d8@group.calendar.google.com";
-    
-    // 【新增】試算表 API 網址，對應你的工作表名稱「系統設定」
     const SHEET_API_URL = "https://opensheet.elk.sh/1YCUnbVAyJYljp3ryJIjl4jOVO-_eSFmuQIvCQX_agko/系統設定"; 
 
     const timeSlots = ["08:00-10:00", "10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
@@ -91,7 +144,8 @@
     const specialHolidays = ["2026-09-17", "2026-10-10"]; 
 
     let busyEvents = []; 
-    let allowHolidayBooking = false; // 【新增】存放從試算表抓回來的假日開關狀態，預設為關閉
+    let allowHolidayBooking = false; 
+    let isSystemUnderMaintenance = false; // 【新增】系統維護開關變數
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -105,26 +159,23 @@
     let currentDisplayDate = new Date(today); 
     let currentCalendarDate = new Date(today); 
 
-    // === 【新增】抓取 Google 試算表設定 ===
     async function loadBackendSettings() {
         try {
             const response = await fetch(SHEET_API_URL);
             const data = await response.json();
-            
-            // 逐行比對試算表資料
             data.forEach(row => {
                 if (row['設定項目'] === '開放例假日預約') {
-                    // 若試算表填寫 TRUE，則變數轉為 true，否則皆為 false
                     allowHolidayBooking = (row['狀態/內容'].toUpperCase() === 'TRUE');
                 }
+                // 【新增】抓取系統維護狀態
+                if (row['設定項目'] === '系統維護中') {
+                    isSystemUnderMaintenance = (row['狀態/內容'].toUpperCase() === 'TRUE');
+                }
             });
-        } catch (error) {
-            console.error("讀取 Google 試算表失敗：", error);
-        }
-        renderAll(); // 抓完設定後更新一次畫面
+        } catch (error) { console.error("讀取 Google 試算表失敗：", error); }
+        renderAll(); 
     }
 
-    // === 抓取 Google 日曆資料 ===
     async function loadGoogleCalendarData() {
         const timeMin = today.toISOString(); 
         const timeMax = maxDate.toISOString();
@@ -133,27 +184,19 @@
         try {
             const response = await fetch(url);
             const data = await response.json();
-            
             if (data.items) {
                 busyEvents = data.items.map(event => {
                     if (event.start.date) {
                         return { isFullDay: true, dateStr: event.start.date }; 
                     } else {
-                        return { 
-                            isFullDay: false, 
-                            start: new Date(event.start.dateTime).getTime(), 
-                            end: new Date(event.end.dateTime).getTime() 
-                        }; 
+                        return { isFullDay: false, start: new Date(event.start.dateTime).getTime(), end: new Date(event.end.dateTime).getTime() }; 
                     }
                 });
             }
-        } catch (error) {
-            console.error("讀取 Google 日曆失敗：", error);
-        }
+        } catch (error) { console.error("讀取 Google 日曆失敗：", error); }
         renderAll(); 
     }
 
-    // 格式化日期
     function formatDateString(d) {
         let y = d.getFullYear();
         let m = String(d.getMonth() + 1).padStart(2, '0');
@@ -161,21 +204,17 @@
         return `${y}-${m}-${day}`;
     }
 
-    // 比對重疊
     function isSlotBooked(dateStr, slotStr) {
         for (let evt of busyEvents) {
             if (evt.isFullDay && evt.dateStr === dateStr) return true;
         }
-
         const [startHourStr, endHourStr] = slotStr.split('-');
         const slotStart = new Date(`${dateStr}T${startHourStr}:00`).getTime();
         const slotEnd = new Date(`${dateStr}T${endHourStr}:00`).getTime();
 
         for (let evt of busyEvents) {
             if (!evt.isFullDay) {
-                if (evt.start < slotEnd && evt.end > slotStart) {
-                    return true;
-                }
+                if (evt.start < slotEnd && evt.end > slotStart) return true;
             }
         }
         return false;
@@ -187,27 +226,20 @@
         return specialHolidays.includes(formatDateString(dateObj)); 
     }
 
-    // 判斷當日狀態 (整合了試算表權限)
     function getDayState(dateObj) {
-        let isHol = checkIsHoliday(dateObj);
-        
-        // 【修改】將原本抓取 HTML 勾選框的語法，改為讀取全域變數 allowHolidayBooking
-        if (isHol && !allowHolidayBooking) return 3;
+        // 【新增阻擋邏輯】如果系統維護中，強制回傳狀態 3 (未開放)
+        if (isSystemUnderMaintenance) return 3;
 
-        if (dateObj < today || dateObj > maxDate) {
-            return 3; 
-        } else if (dateObj >= today && dateObj < minDate) {
-            return 1; 
-        } else {
-            return 2; 
-        }
+        let isHol = checkIsHoliday(dateObj);
+        if (isHol && !allowHolidayBooking) return 3;
+        if (dateObj < today || dateObj > maxDate) return 3; 
+        if (dateObj >= today && dateObj < minDate) return 1; 
+        return 2; 
     }
 
     function getBookedCount(dateStr) {
         let count = 0;
-        timeSlots.forEach(slot => {
-            if (isSlotBooked(dateStr, slot)) count++;
-        });
+        timeSlots.forEach(slot => { if (isSlotBooked(dateStr, slot)) count++; });
         return count;
     }
 
@@ -217,7 +249,6 @@
         const month = currentCalendarDate.getMonth();
         
         document.getElementById('calendar-title').innerText = `${year}年${month + 1}月`;
-        
         let calendarHTML = `<div class="day-name">一</div><div class="day-name">二</div><div class="day-name">三</div><div class="day-name">四</div><div class="day-name">五</div><div class="day-name red-day">六</div><div class="day-name red-day">日</div>`;
 
         const firstDay = new Date(year, month, 1);
@@ -237,24 +268,69 @@
             let textClass = isHol ? "red-day" : "";
             
             let bgClass = "";
-            if (state === 3) {
-                bgClass = "state-3";
-            } else if (state === 1 || (state === 2 && bookedCount === timeSlots.length)) {
-                bgClass = "state-1"; 
-            } else {
-                bgClass = "state-2"; 
-            }
+            if (state === 3) { bgClass = "state-3"; } 
+            else if (state === 1 || (state === 2 && bookedCount === timeSlots.length)) { bgClass = "state-1"; } 
+            else { bgClass = "state-2"; }
             
             let clickEvent = `onclick="jumpToDate(${year}, ${month}, ${d})"`;
             calendarHTML += `<div class="date-cell ${bgClass} ${textClass}" ${clickEvent}>${d}</div>`;
         }
         grid.innerHTML = calendarHTML;
+
+        // 【新增】更新維護提示顯示狀態
+        let warningDiv = document.getElementById('maintenance-warning');
+        let footerText = document.getElementById('footer-note-text');
+        if (warningDiv && footerText) {
+            if (isSystemUnderMaintenance) {
+                warningDiv.style.display = 'block';
+                footerText.innerHTML = '<span style="color: #d93025; font-weight: bold;">系統目前正在進行維護<br>敬請見諒，稍後再試</span>';
+            } else {
+                warningDiv.style.display = 'none';
+                footerText.innerHTML = `暫未開放三天內及三個月後的線上預約<br>(GMT+08:00) 台北標準時間`;
+            }
+        }
+    }
+
+    // 將動畫觸發抽離成獨立函數，方便日曆點擊也能有翻頁效果
+    function animateAndRenderSchedule(directionOffset) {
+        const grid = document.getElementById('schedule-grid');
+        
+        // 1. 判斷動畫方向並套用淡出類別
+        grid.classList.remove('fade-in');
+        if (directionOffset < 0) {
+             grid.classList.add('fade-out-right'); // 往右滑出 (表示回退到上一週)
+        } else if (directionOffset > 0) {
+             grid.classList.add('fade-out-left'); // 往左滑出 (表示前進到下一週)
+        } else {
+             // 若無方向 (例如初始載入)，直接淡出
+             grid.style.opacity = 0; 
+        }
+
+        // 2. 等待淡出動畫完成 (約 300 毫秒) 後，更新內容並淡入
+        setTimeout(() => {
+            renderScheduleCore(); // 執行核心渲染邏輯
+            
+            // 移除淡出類別，準備淡入
+            grid.classList.remove('fade-out-left', 'fade-out-right');
+            grid.style.opacity = ""; // 移除 style 直接設定的 opacity
+            
+            // 強制瀏覽器重繪 (Reflow) 確保動畫能正確觸發
+            void grid.offsetWidth; 
+
+            // 套用淡入類別
+            grid.classList.add('fade-in');
+        }, 300); // 這裡的 300 必須與 CSS 的 transition 時間一致
     }
 
     function jumpToDate(year, month, day) {
-        currentDisplayDate = new Date(year, month, day);
-        currentDisplayDate.setHours(0, 0, 0, 0);
-        renderSchedule(); 
+        let newDate = new Date(year, month, day);
+        newDate.setHours(0, 0, 0, 0);
+        
+        // 簡單判斷點擊的日期在當前顯示週次之前還是之後，決定動畫方向
+        let offset = newDate.getTime() > currentDisplayDate.getTime() ? 1 : -1;
+
+        currentDisplayDate = newDate;
+        animateAndRenderSchedule(offset); 
     }
 
     function changeCalendarMonth(offset) {
@@ -262,77 +338,87 @@
         renderCalendar();
     }
 
-    function renderSchedule() {
+    // 核心渲染邏輯，不包含動畫
+    function renderScheduleCore() {
         const grid = document.getElementById('schedule-grid');
-        grid.innerHTML = ""; 
-
+        
         let currentDayOfWeek = currentDisplayDate.getDay();
         let distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
-        
         let startOfWeek = new Date(currentDisplayDate);
         startOfWeek.setDate(currentDisplayDate.getDate() + distanceToMonday);
 
+        let html = `<div></div>`; 
+        let weekDates = [];
+        
         for (let i = 0; i < 7; i++) {
             let loopDate = new Date(startOfWeek);
             loopDate.setDate(startOfWeek.getDate() + i);
             loopDate.setHours(0, 0, 0, 0);
+            weekDates.push(loopDate);
 
-            let dateStr = formatDateString(loopDate);
-            let state = getDayState(loopDate);
             let isHol = checkIsHoliday(loopDate);
             let redClass = isHol ? " red-day" : "";
 
-            let dayColumnHTML = `<div class="day-column"><div class="col-header"><span class="dow${redClass}">${dayNames[loopDate.getDay()]}</span><span class="date${redClass}">${loopDate.getDate()}</span></div>`;
+            html += `
+                <div class="col-header">
+                    <span class="dow${redClass}">${dayNames[loopDate.getDay()]}</span>
+                    <span class="date${redClass}">${loopDate.getDate()}</span>
+                </div>`;
+        }
 
-            timeSlots.forEach(slot => {
+        timeSlots.forEach(slot => {
+            html += `<div class="time-label">${slot}</div>`;
+
+            weekDates.forEach(loopDate => {
+                let dateStr = formatDateString(loopDate);
+                let state = getDayState(loopDate);
                 let isBooked = isSlotBooked(dateStr, slot);
-                let btnText = "";
-                let btnClass = "time-btn";
                 
+                let btnText = "";
+                let btnClass = "time-btn ";
                 let link = `href="contact.html?date=${dateStr}&time=${slot}"`; 
 
                 if (state === 3) {
-                    btnText = slot + " 不開放";
-                    btnClass += " disabled";
+                    btnText = "未開放";
+                    btnClass += "disabled";
                     link = "";
                 } else if (state === 1) {
-                    btnText = slot + (isBooked ? " 已預約" : " 不開放");
-                    btnClass += " disabled";
+                    btnText = isBooked ? "已預約" : "未開放";
+                    btnClass += isBooked ? "booked" : "disabled";
                     link = "";
                 } else if (state === 2) {
                     if (isBooked) {
-                        btnText = slot + " 已預約";
-                        btnClass += " disabled";
+                        btnText = "已預約";
+                        btnClass += "booked";
                         link = "";
                     } else {
-                        btnText = slot + " 可預約";
+                        btnText = "可預約";
+                        btnClass += "available";
                     }
                 }
                 
-                dayColumnHTML += `<a ${link} class="${btnClass}">${btnText}</a>`;
+                html += `<div class="btn-wrapper"><a ${link} class="${btnClass}">${btnText}</a></div>`;
             });
+        });
 
-            dayColumnHTML += `</div>`;
-            grid.innerHTML += dayColumnHTML;
-        }
+        grid.innerHTML = html;
         currentCalendarDate = new Date(currentDisplayDate);
         renderCalendar();
     }
 
     function changeWeek(offset) {
         currentDisplayDate.setDate(currentDisplayDate.getDate() + (offset * 7));
-        renderSchedule();
+        animateAndRenderSchedule(offset); // 修改：呼叫帶有動畫的渲染函數
     }
 
     function renderAll() {
         renderCalendar();
-        renderSchedule();
+        renderScheduleCore(); // 初始載入直接渲染，不需要複雜的過場動畫判斷
     }
 
-    // 網頁啟動順序：先畫空表 -> 抓 Google 行事曆 -> 抓 Google 試算表設定
     renderAll();
     loadGoogleCalendarData();
-    loadBackendSettings(); // 【新增】觸發後台資料抓取
+    loadBackendSettings(); 
 </script>
 
 </body>
