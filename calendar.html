@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約排程表 - 網格膠囊專業版 (動畫+維護開關+寬距月曆)</title>
+    <title>預約排程表 - 網格膠囊專業版 (含翻頁動畫)</title>
     <style>
         /* 基礎設定 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #ffffff; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
         .booking-container { display: flex; gap: 40px; max-width: 1450px; width: 100%; }
 
-        /* 左側日曆 - 面積放大 150%，字體維持原樣 */
-        .calendar-panel { width: 220px; flex-shrink: 0; } /* 寬度從 160px 加寬至 220px */
-        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 20px; }
+        /* ================= 左側日曆 (面積放大150%，字體不變) ================= */
+        .calendar-panel { width: 240px; flex-shrink: 0; } /* 寬度從160px加寬至240px */
+        
+        .system-title { font-size: 1.2rem; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; padding-bottom: 10px; border-bottom: 2px solid #e6f2fa; }
+
+        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 15px; }
         .nav-arrows { font-weight: bold; cursor: pointer; color: #5f6368; user-select: none; }
         .nav-arrows span { padding: 0 10px; }
         .nav-arrows span:hover { color: #202124; }
-        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 8px 0; font-size: 0.75em; } /* 間距加寬，字體不變 */
-        .day-name { font-size: 0.85em; margin-bottom: 8px; color: #70757a; }
-        .date-cell { width: 28px; height: 28px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;} /* 圈圈從 22px 放大至 28px */
+        
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 8px 0; font-size: 0.75em; } /* 間距拉大至 8px */
+        .day-name { font-size: 0.85em; margin-bottom: 5px; color: #70757a; }
+        
+        .date-cell { width: 28px; height: 28px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;} /* 圈圈由 22px 放大至 28px */
         
         /* 日曆狀態色彩 */
         .date-cell.state-2 { background-color: #9bc1e6; color: white;} 
@@ -28,7 +33,7 @@
         .date-cell.state-3:not(.red-day) { color: #bdc1c6; cursor: default; } 
         .red-day { color: #FF7C80 !important; }
 
-        /* 右側時段面板 */
+        /* ================= 右側時段面板 ================= */
         .slots-panel { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; /* 確保動畫不超過邊界 */ }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #2c4a6b; font-weight: bold; font-size: 0.85em; transition: background 0.2s, transform 0.1s;}
@@ -103,6 +108,7 @@
 
 <div class="booking-container">
     <div class="calendar-panel">
+        <div class="system-title">講師行事曆預約系統</div>
         <div class="month-header">
             <span id="calendar-title">2026年</span>
             <div class="nav-arrows">
@@ -119,16 +125,13 @@
                 <button onclick="changeWeek(-1)"> &lt; 上一週 </button>
                 <button onclick="changeWeek(1)"> 下一週 &gt; </button>
             </div>
-            <!-- 維護狀態提示，預設隱藏 -->
-            <div id="maintenance-warning" style="display: none; color: #d93025; font-weight: bold; font-size: 0.9em;">⚠️ 系統維護中，暫停預約</div>
         </div>
         
         <!-- 加入初始動畫類別 fade-in -->
         <div class="slots-grid fade-in" id="schedule-grid"></div>
 
         <div class="footer-note" id="footer-note-text">
-            暫未開放三天內及三個月後的線上預約<br>
-            (GMT+08:00) 台北標準時間
+            <!-- 備註將由 JavaScript 動態更新 -->
         </div>
     </div>
 </div>
@@ -145,7 +148,7 @@
 
     let busyEvents = []; 
     let allowHolidayBooking = false; 
-    let isSystemUnderMaintenance = false; // 【新增】系統維護開關變數
+    let isSystemUnderMaintenance = false; // 系統維護狀態
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -167,7 +170,6 @@
                 if (row['設定項目'] === '開放例假日預約') {
                     allowHolidayBooking = (row['狀態/內容'].toUpperCase() === 'TRUE');
                 }
-                // 【新增】抓取系統維護狀態
                 if (row['設定項目'] === '系統維護中') {
                     isSystemUnderMaintenance = (row['狀態/內容'].toUpperCase() === 'TRUE');
                 }
@@ -227,8 +229,7 @@
     }
 
     function getDayState(dateObj) {
-        // 【新增阻擋邏輯】如果系統維護中，強制回傳狀態 3 (未開放)
-        if (isSystemUnderMaintenance) return 3;
+        if (isSystemUnderMaintenance) return 3; // 維護期間全部強制未開放
 
         let isHol = checkIsHoliday(dateObj);
         if (isHol && !allowHolidayBooking) return 3;
@@ -241,6 +242,18 @@
         let count = 0;
         timeSlots.forEach(slot => { if (isSlotBooked(dateStr, slot)) count++; });
         return count;
+    }
+
+    // 動態更新右下角備註文字
+    function updateFooterNote() {
+        const footerNote = document.getElementById('footer-note-text');
+        if (isSystemUnderMaintenance) {
+            footerNote.innerHTML = '<span style="color: #d93025; font-weight: bold;">⚠️ 系統目前正在進行維護，暫停線上預約</span><br>(GMT+08:00) 台北標準時間';
+        } else if (allowHolidayBooking) {
+            footerNote.innerHTML = '暫未開放三天內、三個月後的線上預約<br>(GMT+08:00) 台北標準時間';
+        } else {
+            footerNote.innerHTML = '暫未開放三天內、三個月後、例假日的線上預約<br>(GMT+08:00) 台北標準時間';
+        }
     }
 
     function renderCalendar() {
@@ -276,19 +289,6 @@
             calendarHTML += `<div class="date-cell ${bgClass} ${textClass}" ${clickEvent}>${d}</div>`;
         }
         grid.innerHTML = calendarHTML;
-
-        // 【新增】更新維護提示顯示狀態
-        let warningDiv = document.getElementById('maintenance-warning');
-        let footerText = document.getElementById('footer-note-text');
-        if (warningDiv && footerText) {
-            if (isSystemUnderMaintenance) {
-                warningDiv.style.display = 'block';
-                footerText.innerHTML = '<span style="color: #d93025; font-weight: bold;">系統目前正在進行維護<br>敬請見諒，稍後再試</span>';
-            } else {
-                warningDiv.style.display = 'none';
-                footerText.innerHTML = `暫未開放三天內及三個月後的線上預約<br>(GMT+08:00) 台北標準時間`;
-            }
-        }
     }
 
     // 將動畫觸發抽離成獨立函數，方便日曆點擊也能有翻頁效果
@@ -414,6 +414,7 @@
     function renderAll() {
         renderCalendar();
         renderScheduleCore(); // 初始載入直接渲染，不需要複雜的過場動畫判斷
+        updateFooterNote();   // 更新底部備註
     }
 
     renderAll();
