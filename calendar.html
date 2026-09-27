@@ -3,135 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約排程表 - 網格膠囊專業版 (含翻頁動畫)</title>
+    <title>預約排程表 - 三欄式專業版 (講師轉換版)</title>
     <style>
         /* 基礎設定 */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #ffffff; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
-        .booking-container { display: flex; gap: 40px; max-width: 1450px; width: 100%; }
-
-        /* ================= 左側日曆 (面積放大150%，字體不變) ================= */
-        .calendar-panel { width: 240px; flex-shrink: 0; } /* 寬度從160px加寬至240px */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #f8fafd; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
         
-        .system-title { font-size: 1.2rem; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; padding-bottom: 10px; border-bottom: 2px solid #e6f2fa; }
+        /* 三欄式主容器 */
+        .booking-container { display: flex; flex-wrap: wrap; gap: 30px; max-width: 1200px; width: 100%; justify-content: center; align-items: flex-start; }
 
-        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; margin-bottom: 15px; }
-        .nav-arrows { font-weight: bold; cursor: pointer; color: #5f6368; user-select: none; }
+        /* 面板共用白底與陰影 */
+        .panel { background: #ffffff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; }
+
+        /* ================= 左側：講師系統 ================= */
+        .lecturer-panel { width: 300px; flex-shrink: 0; }
+        .system-title { font-size: 1.4em; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; }
+        
+        .lecturer-card { border: 2px solid #e6f2fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; background: #fff;}
+        .lecturer-card:hover { border-color: #9bc1e6; box-shadow: 0 2px 8px rgba(155, 193, 230, 0.3); }
+        .lecturer-basic { display: flex; align-items: center; gap: 15px; }
+        .lecturer-basic img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 1px solid #e8eaed; }
+        .lecturer-info { flex: 1; }
+        .lecturer-name { font-weight: bold; font-size: 1.1em; color: #1e3a5f; margin-bottom: 5px;}
+        
+        /* 專長標籤設計 */
+        .lecturer-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag { background: #e6f2fa; color: #1e3a5f; font-size: 0.75em; padding: 3px 8px; border-radius: 12px; font-weight: bold;}
+        
+        /* 簡介展開區 */
+        .lecturer-details { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #c2e7ff; font-size: 0.9em; color: #3c4043; line-height: 1.6; display: none; white-space: pre-line; }
+
+        /* ================= 中間：日曆選擇 ================= */
+        .calendar-panel { width: 340px; flex-shrink: 0; }
+        .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; font-weight: bold; margin-bottom: 20px; color: #1e3a5f;}
+        .nav-arrows { cursor: pointer; color: #5f6368; user-select: none; font-size: 1.2em;}
         .nav-arrows span { padding: 0 10px; }
-        .nav-arrows span:hover { color: #202124; }
+        .nav-arrows span:hover { color: #1e3a5f; }
         
-        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 8px 0; font-size: 0.75em; } /* 間距拉大至 8px */
-        .day-name { font-size: 0.85em; margin-bottom: 5px; color: #70757a; }
-        
-        .date-cell { width: 28px; height: 28px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;} /* 圈圈由 22px 放大至 28px */
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 8px 0; font-size: 0.9em; }
+        .day-name { font-size: 0.9em; margin-bottom: 10px; color: #70757a; }
+        .date-cell { width: 32px; height: 32px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3c4043; cursor: pointer; transition: background 0.2s;}
         
         /* 日曆狀態色彩 */
-        .date-cell.state-2 { background-color: #9bc1e6; color: white;} 
-        .date-cell.state-2:hover { background-color: #82afd9; }
-        .date-cell.state-1 { background-color: #e6f2fa; } 
-        .date-cell.state-1:hover { background-color: #d1e6f5; }
+        .date-cell.state-2 { background-color: #c2e7ff; color: #1e3a5f;} 
+        .date-cell.state-2:hover { background-color: #9bc1e6; }
+        .date-cell.state-1 { background-color: #f1f3f4; } 
         .date-cell.state-3 { background-color: transparent; } 
         .date-cell.state-3:not(.red-day) { color: #bdc1c6; cursor: default; } 
         .red-day { color: #FF7C80 !important; }
-
-        /* ================= 右側時段面板 ================= */
-        .slots-panel { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; /* 確保動畫不超過邊界 */ }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #2c4a6b; font-weight: bold; font-size: 0.85em; transition: background 0.2s, transform 0.1s;}
-        .week-controls button:hover { background: #f8f9fa; }
-        .week-controls button:active { transform: scale(0.95); /* 點擊按鈕縮小回饋 */ }
         
-        /* 🚀 網格排版 */
-        .slots-grid { 
+        /* 被選取的日期 (深藍高亮) */
+        .date-cell.selected-day { background-color: #1e3a5f !important; color: white !important; font-weight: bold; box-shadow: 0 2px 6px rgba(30, 58, 95, 0.4);}
+
+        /* 調整中間區底下的文字設計 (與右下角字體統一) */
+        .selected-date-text { margin-top: 25px; padding-top: 20px; border-top: 1px solid #e8eaed; text-align: center; font-size: 0.8em; color: #70757a; line-height: 1.6; }
+
+        /* ================= 右側：單日預約時段 ================= */
+        .slots-panel { width: 380px; flex-shrink: 0; display: flex; flex-direction: column; }
+        .panel-header-title { font-size: 1.1em; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; }
+        
+        /* 單日兩欄式網格 - 直行排序 (由上而下，左至右) */
+        .slots-grid-daily { 
             display: grid; 
-            grid-template-columns: 85px repeat(7, 1fr); 
-            gap: 16px 8px; 
-            align-items: center;
-            margin-bottom: 40px;
-            /* 動畫基礎設定 */
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: repeat(3, 1fr);
+            grid-auto-flow: column;
+            gap: 15px; 
+            margin-bottom: auto;
         }
         
-        /* 動畫類別 (搭配 JavaScript 使用) */
-        .slots-grid.fade-out-left { opacity: 0; transform: translateX(-20px); }
-        .slots-grid.fade-out-right { opacity: 0; transform: translateX(20px); }
-        .slots-grid.fade-in { opacity: 1; transform: translateX(0); }
-
-        /* 表頭日期設計 */
-        .col-header { text-align: center; display: flex; flex-direction: column; align-items: center; padding-bottom: 10px;}
-        .col-header .dow { font-size: 0.85em; margin-bottom: 5px; color: #5f6368;}
-        .col-header .date { font-size: 1.5em; }
-
-        /* 左側時間標籤 (深色粗體) */
-        .time-label {
-            font-size: 0.85em;
-            font-weight: bold;
-            color: #1e3a5f; 
-            text-align: right;
-            padding-right: 12px;
-            white-space: nowrap;
-        }
-
-        /* 按鈕設計 */
-        .btn-wrapper { display: flex; justify-content: center; width: 100%; }
+        /* 大型預約按鈕 */
         .time-btn { 
-            width: 100%; 
-            max-width: 90px; 
-            padding: 10px 0; 
-            border-radius: 20px; 
-            font-size: 0.8rem; 
+            padding: 15px 10px; 
+            border-radius: 8px; 
             cursor: pointer; 
-            transition: opacity 0.2s, transform 0.1s; 
+            transition: all 0.2s; 
             text-align: center; 
             text-decoration: none; 
-            display: block; 
-            box-sizing: border-box; 
-            border: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid transparent;
         }
-        /* 點擊按鈕縮小回饋 */
-        .time-btn:active:not(.disabled):not(.booked) { transform: scale(0.95); }
         
-        /* 狀態配色獨立區隔 */
-        /* 狀態：可預約 (實心藍) */
-        .time-btn.available { background-color: #9bc1e6; color: #1e3a5f; }
-        .time-btn.available:hover { opacity: 0.8; }
+        .time-text { font-size: 1.1em; font-weight: bold; margin-bottom: 6px; }
+        .status-text { font-size: 0.85em; }
+
+        /* 狀態配色 */
+        .time-btn.available { background-color: #e6f2fa; border-color: #9bc1e6; color: #1e3a5f; }
+        .time-btn.available:hover { background-color: #9bc1e6; color: white; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(155, 193, 230, 0.4);}
+        .time-btn.available:hover .status-text { color: #f8fafd; }
         
-        /* 狀態：已預約 (淡冰藍底，深色字) */
-        .time-btn.booked { background-color: #e2f1f8; color: #1e3a5f; cursor: default; pointer-events: none; }
+        .time-btn.booked { background-color: #f1f3f4; border-color: #dadce0; color: #70757a; cursor: default; pointer-events: none; }
+        .time-btn.disabled { background-color: #f8fafd; border-color: #f1f3f4; color: #bdc1c6; cursor: default; pointer-events: none; }
 
-        /* 狀態：未開放 (極白藍底，淺色字) */
-        .time-btn.disabled { background-color: #f4f9fc; color: #b3cde0; cursor: default; pointer-events: none; }
-
-        .footer-note { text-align: right; color: #5f6368; font-size: 0.8em; line-height: 1.6; margin-top: auto; padding-top: 20px; }
+        .footer-note { text-align: center; color: #70757a; font-size: 0.8em; line-height: 1.6; margin-top: 30px; }
     </style>
 </head>
 <body>
 
 <div class="booking-container">
-    <div class="calendar-panel">
-        <div class="system-title">講師行事曆預約系統</div>
-        <div class="month-header">
-            <span id="calendar-title">2026年</span>
-            <div class="nav-arrows">
-                <span onclick="changeCalendarMonth(-1)">&lt;</span>
-                <span onclick="changeCalendarMonth(1)">&gt;</span>
-            </div>
+    <!-- 左側：講師系統 -->
+    <div class="lecturer-panel panel">
+        <div class="system-title">講師課程預約系統</div>
+        <div id="lecturer-list">
+            <div style="text-align: center; color: #bdc1c6; padding: 20px;">載入講師資料中...</div>
         </div>
-        <div class="days-grid" id="calendar-grid"></div>
     </div>
 
-    <div class="slots-panel">
-        <div class="panel-header">
-            <div class="week-controls">
-                <button onclick="changeWeek(-1)"> &lt; 上一週 </button>
-                <button onclick="changeWeek(1)"> 下一週 &gt; </button>
-            </div>
+    <!-- 中間：日曆選擇 -->
+    <div class="calendar-panel panel">
+        <div class="month-header">
+            <span class="nav-arrows" onclick="changeCalendarMonth(-1)">&lt;</span>
+            <span id="calendar-title">2026年 9月</span>
+            <span class="nav-arrows" onclick="changeCalendarMonth(1)">&gt;</span>
         </div>
+        <div class="days-grid" id="calendar-grid"></div>
         
-        <!-- 加入初始動畫類別 fade-in -->
-        <div class="slots-grid fade-in" id="schedule-grid"></div>
+        <div class="selected-date-text" id="booking-rule-text">
+            載入中...
+        </div>
+    </div>
 
-        <div class="footer-note" id="footer-note-text">
-            <!-- 備註將由 JavaScript 動態更新 -->
+    <!-- 右側：單日預約時段 -->
+    <div class="slots-panel panel">
+        <!-- 標題改為動態顯示選擇的日期 -->
+        <div class="panel-header-title" id="selected-date-header">載入中...</div>
+        
+        <div class="slots-grid-daily" id="daily-schedule-grid">
+            <!-- 時段按鈕將由 JavaScript 動態載入 -->
+        </div>
+
+        <div class="footer-note">
+            (GMT+08:00) 台北標準時間
         </div>
     </div>
 </div>
@@ -140,15 +144,21 @@
     // === API 核心設定 ===
     const API_KEY = "AIzaSyC7S2Qc_VbcK_9ZpfHeMP1NTsbJgSMe5z4";
     const CALENDAR_ID = "1eec1db5ec1525875654b21a8c652d2d303924e199b4b90ad35ee20f06aa57d8@group.calendar.google.com";
-    const SHEET_API_URL = "https://opensheet.elk.sh/1YCUnbVAyJYljp3ryJIjl4jOVO-_eSFmuQIvCQX_agko/系統設定"; 
+    
+    // 試算表連結 (設定中心 & 講師資料)
+    const SHEET_SETTINGS_URL = "https://opensheet.elk.sh/1YCUnbVAyJYljp3ryJIjl4jOVO-_eSFmuQIvCQX_agko/系統設定"; 
+    const SHEET_LECTURER_URL = "https://opensheet.elk.sh/1YCUnbVAyJYljp3ryJIjl4jOVO-_eSFmuQIvCQX_agko/講師資料"; 
+
+    // 目標聯繫網頁 URL
+    const CONTACT_PAGE_URL = "https://roy111111nter.github.io/nutrition/contact.html";
 
     const timeSlots = ["08:00-10:00", "10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
-    const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+    const dayNames = ["日", "一", "二", "三", "四", "五", "六"]; 
     const specialHolidays = ["2026-09-17", "2026-10-10"]; 
 
     let busyEvents = []; 
     let allowHolidayBooking = false; 
-    let isSystemUnderMaintenance = false; // 系統維護狀態
+    let lecturersData = [];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -159,25 +169,119 @@
     const maxDate = new Date(today);
     maxDate.setMonth(today.getMonth() + 3); 
 
-    let currentDisplayDate = new Date(today); 
-    let currentCalendarDate = new Date(today); 
+    let currentCalendarDate = new Date(minDate); 
+    let selectedDate = new Date(minDate);        
 
+    // === 載入講師資料 (直向轉換版) ===
+    async function loadLecturers() {
+        try {
+            const response = await fetch(SHEET_LECTURER_URL);
+            const data = await response.json();
+            
+            if(data.length === 0) return;
+
+            // 由於直向設計，第一列將成為 Key
+            const keys = Object.keys(data[0]); 
+            const rowHeaderKey = keys[0]; // A 欄標題 (預期為 "講師名稱")
+
+            let parsedLecturers = [];
+
+            // 迴圈讀取 B 欄、C 欄...的講師資料
+            for(let i = 1; i < keys.length; i++) {
+                let lecturerName = keys[i];
+                if(!lecturerName || lecturerName.trim() === '') continue;
+
+                let l_obj = { '講師名稱': lecturerName };
+
+                // 遍歷 A2~A4 (講師圖片、專長標籤、簡歷介紹) 並將對應值塞入
+                data.forEach(row => {
+                    let fieldName = row[rowHeaderKey];
+                    if(fieldName) {
+                        l_obj[fieldName.trim()] = row[lecturerName] || '';
+                    }
+                });
+
+                parsedLecturers.push(l_obj);
+            }
+
+            lecturersData = parsedLecturers;
+            renderLecturers();
+        } catch (error) { 
+            console.error("讀取講師資料失敗：", error); 
+            document.getElementById('lecturer-list').innerHTML = `<div style="text-align: center; color: red; padding: 20px;">無法載入講師資料，請檢查試算表設定。</div>`;
+        }
+    }
+
+    // 渲染講師卡片
+    function renderLecturers() {
+        const panel = document.getElementById('lecturer-list');
+        let html = '';
+        
+        lecturersData.slice(0, 2).forEach((l, index) => {
+            let name = l['講師名稱'] || '講師';
+            
+            // 處理圖片轉換邏輯
+            let picInput = (l['講師圖片'] || '').toString().trim();
+            let photo = 'https://via.placeholder.com/150/e8eaed/5f6368?text=Photo'; // 預設灰圖
+            
+            if (picInput === '1') {
+                photo = 'https://drive.google.com/uc?export=view&id=1_Cv3KdBG7kuN9eREyc3wcviErNLC2SU1';
+            } else if (picInput === '2') {
+                photo = 'https://drive.google.com/uc?export=view&id=1bWQ-PoBqb6iRwjzFH1svbCsMbY_Em_KZ';
+            } else if (picInput.startsWith('http')) {
+                photo = picInput; 
+            }
+
+            let tagsRaw = l['專長標籤'] || '';
+            let intro = l['簡歷介紹'] || '暫無簡歷資料';
+
+            let tagsHtml = tagsRaw.split(/[,、，]/)
+                                  .map(t => t.trim())
+                                  .filter(t => t)
+                                  .map(t => `<span class="tag">${t}</span>`)
+                                  .join('');
+
+            html += `
+            <div class="lecturer-card" onclick="toggleLecturer(${index})">
+                <div class="lecturer-basic">
+                    <img src="${photo}" alt="${name}">
+                    <div class="lecturer-info">
+                        <div class="lecturer-name">${name}</div>
+                        <div class="lecturer-tags">${tagsHtml}</div>
+                    </div>
+                </div>
+                <div class="lecturer-details" id="lecturer-detail-${index}">
+                    ${intro}
+                </div>
+            </div>`;
+        });
+        panel.innerHTML = html;
+    }
+
+    function toggleLecturer(index) {
+        let detailDiv = document.getElementById(`lecturer-detail-${index}`);
+        if (detailDiv.style.display === 'block') {
+            detailDiv.style.display = 'none';
+        } else {
+            detailDiv.style.display = 'block';
+        }
+    }
+
+    // === 載入系統設定 ===
     async function loadBackendSettings() {
         try {
-            const response = await fetch(SHEET_API_URL);
+            const response = await fetch(SHEET_SETTINGS_URL);
             const data = await response.json();
             data.forEach(row => {
                 if (row['設定項目'] === '開放例假日預約') {
                     allowHolidayBooking = (row['狀態/內容'].toUpperCase() === 'TRUE');
                 }
-                if (row['設定項目'] === '系統維護中') {
-                    isSystemUnderMaintenance = (row['狀態/內容'].toUpperCase() === 'TRUE');
-                }
             });
-        } catch (error) { console.error("讀取 Google 試算表失敗：", error); }
+        } catch (error) {}
         renderAll(); 
     }
 
+    // === 載入 Google 日曆 ===
     async function loadGoogleCalendarData() {
         const timeMin = today.toISOString(); 
         const timeMax = maxDate.toISOString();
@@ -195,7 +299,7 @@
                     }
                 });
             }
-        } catch (error) { console.error("讀取 Google 日曆失敗：", error); }
+        } catch (error) {}
         renderAll(); 
     }
 
@@ -229,8 +333,6 @@
     }
 
     function getDayState(dateObj) {
-        if (isSystemUnderMaintenance) return 3; // 維護期間全部強制未開放
-
         let isHol = checkIsHoliday(dateObj);
         if (isHol && !allowHolidayBooking) return 3;
         if (dateObj < today || dateObj > maxDate) return 3; 
@@ -244,24 +346,13 @@
         return count;
     }
 
-    // 動態更新右下角備註文字
-    function updateFooterNote() {
-        const footerNote = document.getElementById('footer-note-text');
-        if (isSystemUnderMaintenance) {
-            footerNote.innerHTML = '<span style="color: #d93025; font-weight: bold;">⚠️ 系統目前正在進行維護，暫停線上預約</span><br>(GMT+08:00) 台北標準時間';
-        } else if (allowHolidayBooking) {
-            footerNote.innerHTML = '暫未開放三天內、三個月後的線上預約<br>(GMT+08:00) 台北標準時間';
-        } else {
-            footerNote.innerHTML = '暫未開放三天內、三個月後、例假日的線上預約<br>(GMT+08:00) 台北標準時間';
-        }
-    }
-
+    // === 渲染中間日曆 ===
     function renderCalendar() {
         const grid = document.getElementById('calendar-grid');
         const year = currentCalendarDate.getFullYear();
         const month = currentCalendarDate.getMonth();
         
-        document.getElementById('calendar-title').innerText = `${year}年${month + 1}月`;
+        document.getElementById('calendar-title').innerText = `${year}年 ${month + 1}月`;
         let calendarHTML = `<div class="day-name">一</div><div class="day-name">二</div><div class="day-name">三</div><div class="day-name">四</div><div class="day-name">五</div><div class="day-name red-day">六</div><div class="day-name red-day">日</div>`;
 
         const firstDay = new Date(year, month, 1);
@@ -280,57 +371,25 @@
             let bookedCount = getBookedCount(dateStr);
             let textClass = isHol ? "red-day" : "";
             
+            let isSelected = (loopDate.getTime() === selectedDate.getTime());
+            let selectedClass = isSelected ? " selected-day" : "";
+            
             let bgClass = "";
             if (state === 3) { bgClass = "state-3"; } 
             else if (state === 1 || (state === 2 && bookedCount === timeSlots.length)) { bgClass = "state-1"; } 
             else { bgClass = "state-2"; }
             
             let clickEvent = `onclick="jumpToDate(${year}, ${month}, ${d})"`;
-            calendarHTML += `<div class="date-cell ${bgClass} ${textClass}" ${clickEvent}>${d}</div>`;
+            calendarHTML += `<div class="date-cell ${bgClass} ${textClass}${selectedClass}" ${clickEvent}>${d}</div>`;
         }
         grid.innerHTML = calendarHTML;
     }
 
-    // 將動畫觸發抽離成獨立函數，方便日曆點擊也能有翻頁效果
-    function animateAndRenderSchedule(directionOffset) {
-        const grid = document.getElementById('schedule-grid');
-        
-        // 1. 判斷動畫方向並套用淡出類別
-        grid.classList.remove('fade-in');
-        if (directionOffset < 0) {
-             grid.classList.add('fade-out-right'); // 往右滑出 (表示回退到上一週)
-        } else if (directionOffset > 0) {
-             grid.classList.add('fade-out-left'); // 往左滑出 (表示前進到下一週)
-        } else {
-             // 若無方向 (例如初始載入)，直接淡出
-             grid.style.opacity = 0; 
-        }
-
-        // 2. 等待淡出動畫完成 (約 300 毫秒) 後，更新內容並淡入
-        setTimeout(() => {
-            renderScheduleCore(); // 執行核心渲染邏輯
-            
-            // 移除淡出類別，準備淡入
-            grid.classList.remove('fade-out-left', 'fade-out-right');
-            grid.style.opacity = ""; // 移除 style 直接設定的 opacity
-            
-            // 強制瀏覽器重繪 (Reflow) 確保動畫能正確觸發
-            void grid.offsetWidth; 
-
-            // 套用淡入類別
-            grid.classList.add('fade-in');
-        }, 300); // 這裡的 300 必須與 CSS 的 transition 時間一致
-    }
-
     function jumpToDate(year, month, day) {
-        let newDate = new Date(year, month, day);
-        newDate.setHours(0, 0, 0, 0);
-        
-        // 簡單判斷點擊的日期在當前顯示週次之前還是之後，決定動畫方向
-        let offset = newDate.getTime() > currentDisplayDate.getTime() ? 1 : -1;
-
-        currentDisplayDate = newDate;
-        animateAndRenderSchedule(offset); 
+        selectedDate = new Date(year, month, day);
+        selectedDate.setHours(0, 0, 0, 0);
+        renderCalendar(); 
+        renderDailySchedule(); 
     }
 
     function changeCalendarMonth(offset) {
@@ -338,88 +397,70 @@
         renderCalendar();
     }
 
-    // 核心渲染邏輯，不包含動畫
-    function renderScheduleCore() {
-        const grid = document.getElementById('schedule-grid');
+    // === 渲染右側單日時段 ===
+    function renderDailySchedule() {
+        const grid = document.getElementById('daily-schedule-grid');
+        let html = '';
         
-        let currentDayOfWeek = currentDisplayDate.getDay();
-        let distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
-        let startOfWeek = new Date(currentDisplayDate);
-        startOfWeek.setDate(currentDisplayDate.getDate() + distanceToMonday);
+        let dateStr = formatDateString(selectedDate);
+        let state = getDayState(selectedDate);
 
-        let html = `<div></div>`; 
-        let weekDates = [];
-        
-        for (let i = 0; i < 7; i++) {
-            let loopDate = new Date(startOfWeek);
-            loopDate.setDate(startOfWeek.getDate() + i);
-            loopDate.setHours(0, 0, 0, 0);
-            weekDates.push(loopDate);
-
-            let isHol = checkIsHoliday(loopDate);
-            let redClass = isHol ? " red-day" : "";
-
-            html += `
-                <div class="col-header">
-                    <span class="dow${redClass}">${dayNames[loopDate.getDay()]}</span>
-                    <span class="date${redClass}">${loopDate.getDate()}</span>
-                </div>`;
-        }
+        // 更新右側標題為選定的日期
+        let dowString = dayNames[selectedDate.getDay()];
+        document.getElementById('selected-date-header').innerText = `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日 (星期${dowString})`;
 
         timeSlots.forEach(slot => {
-            html += `<div class="time-label">${slot}</div>`;
+            let isBooked = isSlotBooked(dateStr, slot);
+            
+            let statusText = "";
+            let btnClass = "time-btn ";
+            let link = `href="${CONTACT_PAGE_URL}?date=${dateStr}&time=${slot}"`; 
 
-            weekDates.forEach(loopDate => {
-                let dateStr = formatDateString(loopDate);
-                let state = getDayState(loopDate);
-                let isBooked = isSlotBooked(dateStr, slot);
-                
-                let btnText = "";
-                let btnClass = "time-btn ";
-                let link = `href="contact.html?date=${dateStr}&time=${slot}"`; 
-
-                if (state === 3) {
-                    btnText = "未開放";
-                    btnClass += "disabled";
+            if (state === 3) {
+                statusText = "未開放";
+                btnClass += "disabled";
+                link = "";
+            } else if (state === 1) {
+                statusText = isBooked ? "已預約" : "未開放";
+                btnClass += isBooked ? "booked" : "disabled";
+                link = "";
+            } else if (state === 2) {
+                if (isBooked) {
+                    statusText = "已預約";
+                    btnClass += "booked";
                     link = "";
-                } else if (state === 1) {
-                    btnText = isBooked ? "已預約" : "未開放";
-                    btnClass += isBooked ? "booked" : "disabled";
-                    link = "";
-                } else if (state === 2) {
-                    if (isBooked) {
-                        btnText = "已預約";
-                        btnClass += "booked";
-                        link = "";
-                    } else {
-                        btnText = "可預約";
-                        btnClass += "available";
-                    }
+                } else {
+                    statusText = "可預約";
+                    btnClass += "available";
                 }
-                
-                html += `<div class="btn-wrapper"><a ${link} class="${btnClass}">${btnText}</a></div>`;
-            });
+            }
+            
+            html += `
+            <a ${link} class="${btnClass}">
+                <div class="time-text">${slot}</div>
+                <div class="status-text">${statusText}</div>
+            </a>`;
         });
 
         grid.innerHTML = html;
-        currentCalendarDate = new Date(currentDisplayDate);
-        renderCalendar();
-    }
-
-    function changeWeek(offset) {
-        currentDisplayDate.setDate(currentDisplayDate.getDate() + (offset * 7));
-        animateAndRenderSchedule(offset); // 修改：呼叫帶有動畫的渲染函數
     }
 
     function renderAll() {
         renderCalendar();
-        renderScheduleCore(); // 初始載入直接渲染，不需要複雜的過場動畫判斷
-        updateFooterNote();   // 更新底部備註
+        renderDailySchedule();
+
+        // 依據「開放例假日預約」的狀態，動態變更中間底部的備註文字 (使用 innerHTML 支援 <br> 換行)
+        let ruleText = allowHolidayBooking 
+            ? "暫未開放三天以內、三個月後<br>的線上預約" 
+            : "暫未開放三天以內、三個月後、例假日<br>的線上預約";
+        document.getElementById('booking-rule-text').innerHTML = ruleText;
     }
 
+    // 啟動載入程序
     renderAll();
+    loadLecturers();         
     loadGoogleCalendarData();
-    loadBackendSettings(); 
+    loadBackendSettings();   
 </script>
 
 </body>
