@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>講師行事曆預約系統</title>
+    <title>預約排程表 - 三欄式專業版 (講師轉換版)</title>
     <style>
         /* 基礎設定 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #f8fafd; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
@@ -15,7 +15,8 @@
         .panel { background: #ffffff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; }
 
         /* ================= 左側：講師系統 ================= */
-        .lecturer-panel { width: 300px; flex-shrink: 0; }
+        /* 寬度從 300px 改為 340px，與中間對齊 */
+        .lecturer-panel { width: 340px; flex-shrink: 0; }
         .system-title { font-size: 1.4em; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; }
         
         .lecturer-card { border: 2px solid #e6f2fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; background: #fff;}
@@ -33,6 +34,7 @@
         .lecturer-details { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #c2e7ff; font-size: 0.9em; color: #3c4043; line-height: 1.6; display: none; white-space: pre-line; }
 
         /* ================= 中間：日曆選擇 ================= */
+        /* 基準寬度 340px */
         .calendar-panel { width: 340px; flex-shrink: 0; }
         .month-header { display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; font-weight: bold; margin-bottom: 20px; color: #1e3a5f;}
         .nav-arrows { cursor: pointer; color: #5f6368; user-select: none; font-size: 1.2em;}
@@ -58,7 +60,8 @@
         .selected-date-text { margin-top: 25px; padding-top: 20px; border-top: 1px solid #e8eaed; text-align: center; font-size: 0.8em; color: #70757a; line-height: 1.6; }
 
         /* ================= 右側：單日預約時段 ================= */
-        .slots-panel { width: 380px; flex-shrink: 0; display: flex; flex-direction: column; }
+        /* 寬度從 380px 縮小為 340px，與中間對齊 */
+        .slots-panel { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; }
         .panel-header-title { font-size: 1.1em; font-weight: bold; color: #1e3a5f; margin-bottom: 20px; text-align: center; }
         
         /* 單日兩欄式網格 - 直行排序 (由上而下，左至右) */
@@ -73,6 +76,8 @@
         
         /* 大型預約按鈕 */
         .time-btn { 
+            width: 100%; 
+            max-width: 120px; /* 將按鈕寬度微調以適應縮小後的 340px 面板 */
             padding: 15px 10px; 
             border-radius: 8px; 
             cursor: pointer; 
@@ -84,6 +89,7 @@
             justify-content: center;
             align-items: center;
             border: 2px solid transparent;
+            margin: 0 auto;
         }
         
         .time-text { font-size: 1.1em; font-weight: bold; margin-bottom: 6px; }
@@ -105,7 +111,7 @@
 <div class="booking-container">
     <!-- 左側：講師系統 -->
     <div class="lecturer-panel panel">
-        <div class="system-title">講師行事曆預約系統</div>
+        <div class="system-title">講師課程預約系統</div>
         <div id="lecturer-list">
             <div style="text-align: center; color: #bdc1c6; padding: 20px;">載入講師資料中...</div>
         </div>
