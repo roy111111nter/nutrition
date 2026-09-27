@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約排程表 - Google日曆API實戰版</title>
+    <title>預約排程表 - 雙API實戰版 (日曆+試算表後台)</title>
     <style>
         /* 基礎設定 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #202124; background-color: #ffffff; display: flex; justify-content: center; padding: 40px 20px; margin: 0; }
@@ -34,8 +34,6 @@
         .week-controls button { padding: 8px 16px; margin-right: 10px; border: 1px solid #747775; background: white; border-radius: 20px; cursor: pointer; color: #0b57d0; font-weight: bold; font-size: 0.85em;}
         .week-controls button:hover { background: #f8f9fa; }
         
-        .toggle-container { display: flex; align-items: center; gap: 8px; font-size: 0.9em; color: #5f6368; cursor: pointer; background: #f1f3f4; padding: 6px 12px; border-radius: 8px;}
-        .toggle-container input { cursor: pointer; }
         .slots-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 40px;}
         .day-column { display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .col-header { text-align: center; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; }
@@ -69,10 +67,6 @@
                 <button onclick="changeWeek(-1)"> &lt; 上一週 </button>
                 <button onclick="changeWeek(1)"> 下一週 &gt; </button>
             </div>
-            <label class="toggle-container">
-                <input type="checkbox" id="holidayToggle" checked onchange="renderAll()"> 
-                <span>後台模擬：開放例假日預約</span>
-            </label>
         </div>
         
         <div class="slots-grid" id="schedule-grid"></div>
@@ -88,12 +82,16 @@
     // === API 核心設定 ===
     const API_KEY = "AIzaSyC7S2Qc_VbcK_9ZpfHeMP1NTsbJgSMe5z4";
     const CALENDAR_ID = "1eec1db5ec1525875654b21a8c652d2d303924e199b4b90ad35ee20f06aa57d8@group.calendar.google.com";
+    
+    // 【新增】試算表 API 網址，對應你的工作表名稱「系統設定」
+    const SHEET_API_URL = "https://opensheet.elk.sh/1YCUnbVAyJYljp3ryJIjl4jOVO-_eSFmuQIvCQX_agko/系統設定"; 
 
     const timeSlots = ["08:00-10:00", "10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
     const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
     const specialHolidays = ["2026-09-17", "2026-10-10"]; 
 
-    let busyEvents = []; // 存放從 Google 抓回來的真實忙碌行程
+    let busyEvents = []; 
+    let allowHolidayBooking = false; // 【新增】存放從試算表抓回來的假日開關狀態，預設為關閉
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -107,12 +105,29 @@
     let currentDisplayDate = new Date(today); 
     let currentCalendarDate = new Date(today); 
 
+    // === 【新增】抓取 Google 試算表設定 ===
+    async function loadBackendSettings() {
+        try {
+            const response = await fetch(SHEET_API_URL);
+            const data = await response.json();
+            
+            // 逐行比對試算表資料
+            data.forEach(row => {
+                if (row['設定項目'] === '開放例假日預約') {
+                    // 若試算表填寫 TRUE，則變數轉為 true，否則皆為 false
+                    allowHolidayBooking = (row['狀態/內容'].toUpperCase() === 'TRUE');
+                }
+            });
+        } catch (error) {
+            console.error("讀取 Google 試算表失敗：", error);
+        }
+        renderAll(); // 抓完設定後更新一次畫面
+    }
+
     // === 抓取 Google 日曆資料 ===
     async function loadGoogleCalendarData() {
-        // 設定要抓取的時間區間 (從今天到 3 個月後)，轉成 Google 看得懂的格式
         const timeMin = today.toISOString(); 
         const timeMax = maxDate.toISOString();
-        
         const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
 
         try {
@@ -120,28 +135,25 @@
             const data = await response.json();
             
             if (data.items) {
-                // 將 Google 的資料過濾轉譯成我們好運算的格式
                 busyEvents = data.items.map(event => {
                     if (event.start.date) {
-                        return { isFullDay: true, dateStr: event.start.date }; // 全天行程
+                        return { isFullDay: true, dateStr: event.start.date }; 
                     } else {
                         return { 
                             isFullDay: false, 
                             start: new Date(event.start.dateTime).getTime(), 
                             end: new Date(event.end.dateTime).getTime() 
-                        }; // 特定時段行程
+                        }; 
                     }
                 });
             }
         } catch (error) {
             console.error("讀取 Google 日曆失敗：", error);
         }
-        
-        // 資料抓完後，重新渲染一次畫面，將「可預約」改成真實狀態
         renderAll(); 
     }
 
-    // 格式化日期為 YYYY-MM-DD
+    // 格式化日期
     function formatDateString(d) {
         let y = d.getFullYear();
         let m = String(d.getMonth() + 1).padStart(2, '0');
@@ -149,22 +161,18 @@
         return `${y}-${m}-${day}`;
     }
 
-    // === 判斷該時段是否已被預約 (與 Google 資料比對) ===
+    // 比對重疊
     function isSlotBooked(dateStr, slotStr) {
-        // 1. 先檢查有沒有設定「全天忙碌」
         for (let evt of busyEvents) {
             if (evt.isFullDay && evt.dateStr === dateStr) return true;
         }
 
-        // 2. 將時段 (例如 08:00-10:00) 轉換成時間戳記
         const [startHourStr, endHourStr] = slotStr.split('-');
         const slotStart = new Date(`${dateStr}T${startHourStr}:00`).getTime();
         const slotEnd = new Date(`${dateStr}T${endHourStr}:00`).getTime();
 
-        // 3. 檢查是否有任何 Google 行程與這個時段「重疊」
         for (let evt of busyEvents) {
             if (!evt.isFullDay) {
-                // 重疊邏輯：行程開始時間早於時段結束，且行程結束時間晚於時段開始
                 if (evt.start < slotEnd && evt.end > slotStart) {
                     return true;
                 }
@@ -179,10 +187,11 @@
         return specialHolidays.includes(formatDateString(dateObj)); 
     }
 
+    // 判斷當日狀態 (整合了試算表權限)
     function getDayState(dateObj) {
         let isHol = checkIsHoliday(dateObj);
-        let allowHolidayBooking = document.getElementById('holidayToggle').checked;
-
+        
+        // 【修改】將原本抓取 HTML 勾選框的語法，改為讀取全域變數 allowHolidayBooking
         if (isHol && !allowHolidayBooking) return 3;
 
         if (dateObj < today || dateObj > maxDate) {
@@ -280,7 +289,6 @@
                 let btnText = "";
                 let btnClass = "time-btn";
                 
-                // === 帶入預約參數到聯繫網頁 (此處的 contact.html 請替換成你的實際聯繫網頁網址) ===
                 let link = `href="contact.html?date=${dateStr}&time=${slot}"`; 
 
                 if (state === 3) {
@@ -321,9 +329,10 @@
         renderSchedule();
     }
 
-    // 網頁剛打開時，先畫出空表，然後啟動非同步抓取 Google 日曆，抓完自動重繪
+    // 網頁啟動順序：先畫空表 -> 抓 Google 行事曆 -> 抓 Google 試算表設定
     renderAll();
     loadGoogleCalendarData();
+    loadBackendSettings(); // 【新增】觸發後台資料抓取
 </script>
 
 </body>
