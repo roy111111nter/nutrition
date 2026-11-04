@@ -297,11 +297,20 @@
             const response = await fetch(url);
             const data = await response.json();
             if (data.items) {
+                // 【升級】擷取全天事件的開始與結束日期
                 busyEvents = data.items.map(event => {
                     if (event.start.date) {
-                        return { isFullDay: true, dateStr: event.start.date }; 
+                        return { 
+                            isFullDay: true, 
+                            startStr: event.start.date, 
+                            endStr: event.end.date 
+                        }; 
                     } else {
-                        return { isFullDay: false, start: new Date(event.start.dateTime).getTime(), end: new Date(event.end.dateTime).getTime() }; 
+                        return { 
+                            isFullDay: false, 
+                            start: new Date(event.start.dateTime).getTime(), 
+                            end: new Date(event.end.dateTime).getTime() 
+                        }; 
                     }
                 });
             }
@@ -316,10 +325,20 @@
         return `${y}-${m}-${day}`;
     }
 
+    // === 判斷時段是否被覆蓋 ===
     function isSlotBooked(dateStr, slotStr) {
+        // 先檢查是否被「全天事件」覆蓋
         for (let evt of busyEvents) {
-            if (evt.isFullDay && evt.dateStr === dateStr) return true;
+            if (evt.isFullDay) {
+                // Google Calendar 的 end.date 是 Exclusive (不包含)
+                // 透過字串比對 YYYY-MM-DD，完美涵蓋單日與跨天事件
+                if (dateStr >= evt.startStr && dateStr < evt.endStr) {
+                    return true;
+                }
+            }
         }
+        
+        // 如果沒有被全天事件覆蓋，則檢查精確時間 (含時間的事件)
         const [startHourStr, endHourStr] = slotStr.split('-');
         const slotStart = new Date(`${dateStr}T${startHourStr}:00`).getTime();
         const slotEnd = new Date(`${dateStr}T${endHourStr}:00`).getTime();
@@ -455,7 +474,7 @@
         renderCalendar();
         renderDailySchedule();
 
-        // 依據「開放例假日預約」的狀態，動態變更中間底部的備註文字 (使用 innerHTML 支援 <br> 換行)
+        // 依據「開放例假日預約」的狀態，動態變更中間底部的備註文字
         let ruleText = allowHolidayBooking 
             ? "暫未開放三天以內、三個月後<br>的線上預約" 
             : "暫未開放三天以內、三個月後、例假日<br>的線上預約";
