@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>報名表單</title>
+    <title>合作邀約</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f4f7f6;
+            color: #1C1C1C;
             display: flex;
             justify-content: center;
             padding: 40px 20px;
@@ -23,8 +24,18 @@
         }
         h2 {
             text-align: center;
-            color: #333333;
-            margin-bottom: 20px;
+            color: #70B77E;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 36px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #1C1C1C;
+            font-size: 0.95rem;
+            margin-top: 0;
+            margin-bottom: 24px;
+            letter-spacing: 0.5px;
         }
         .form-group {
             margin-bottom: 16px;
@@ -33,37 +44,50 @@
             display: block;
             margin-bottom: 6px;
             font-weight: 500;
-            color: #555555;
+            color: #1C1C1C;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #cccccc;
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 1rem;
+            font-family: inherit;
+            color: #1C1C1C;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #70B77E;
+            box-shadow: 0 0 0 2px rgba(112, 183, 126, 0.2);
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
         }
         button {
             width: 100%;
             padding: 12px;
-            background-color: #2563eb;
-            color: white;
+            background-color: #70B77E;
+            color: #FFFFFF;
             border: none;
             border-radius: 4px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: background-color 0.2s;
         }
         button:hover {
-            background-color: #1d4ed8;
+            background-color: #5c9e69;
         }
     </style>
 </head>
 <body>
 
     <div class="form-container">
-        <h2>您有社區營養講座合作需求嗎？</h2>
+        <h2>合作邀約</h2>
+        <p class="subtitle">課程｜講座｜採訪｜活動｜顧問｜諮詢</p>
         
         <!-- form action 綁定 FormSubmit 服務與您的信箱 -->
         <form action="https://formsubmit.co/roy111111nter@gmail.com" method="POST">
@@ -73,13 +97,8 @@
             <input type="hidden" name="_next" value="https://roy111111nter.github.io/nutrition/thanks.html">
             
             <div class="form-group">
-                <label for="name">您的稱呼：</label>
-                <input type="text" id="name" name="稱呼" required placeholder="請輸入姓名或稱呼">
-            </div>
-            
-            <div class="form-group">
-                <label for="unit">業務單位：</label>
-                <input type="text" id="unit" name="業務單位" required placeholder="請輸入公司或單位名稱">
+                <label for="name">您的稱呼(或業務單位)：</label>
+                <input type="text" id="name" name="稱呼或業務單位" required placeholder="請輸入姓名、稱呼或公司單位名稱">
             </div>
             
             <div class="form-group">
@@ -97,6 +116,11 @@
                     <option value="16:00-18:00">16:00 - 18:00</option>
                     <option value="18:00-20:00">18:00 - 20:00</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label for="needs">合作需求：</label>
+                <textarea id="needs" name="合作需求" required placeholder="請簡述合作內容、預計日期、地點或預算等資訊"></textarea>
             </div>
             
             <button type="submit">送出資料</button>
