@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感謝您的邀約</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            color: #1C1C1C;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        .card-container {
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .icon-circle {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background-color: rgba(112, 183, 126, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+        }
+        .icon-circle svg {
+            width: 36px;
+            height: 36px;
+            stroke: #70B77E;
+            stroke-width: 3;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        h2 {
+            color: #70B77E;
+            font-size: 26px;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .message {
+            color: #1C1C1C;
+            font-size: 1rem;
+            line-height: 1.7;
+            margin: 0 0 28px;
+        }
+        .btn-back {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: #70B77E;
+            color: #FFFFFF;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-sizing: border-box;
+            transition: background-color 0.2s;
+        }
+        .btn-back:hover {
+            background-color: #5c9e69;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div class="icon-circle">
+            <svg viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+
+        <h2>已收到您的合作邀約！</h2>
+        <p class="message">
+            感謝您的聯繫，表單已成功送出。<br>
+        </p>
+
+        <!-- 可將下方 href 改成您的主頁網址 -->
+        <a href="https://roy111111nter.github.io/nutrition/contact.html" class="btn-back">返回首頁</a>
+    </div>
+
+</body>
+</html>
